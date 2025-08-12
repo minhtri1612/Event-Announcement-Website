@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventHub - Stay Connected</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 EventHub</h1>
+            <p>Stay connected with the latest events and announcements</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Event Submission Form -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon submit-icon">📝</div>
+                    <h2>Submit New Event</h2>
+                </div>
+                <form id="eventForm">
+                    <div class="form-group">
+                        <label for="eventTitle">Event Title *</label>
+                        <input type="text" id="eventTitle" name="eventTitle" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="eventDate">Event Date *</label>
+                        <input type="date" id="eventDate" name="eventDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="eventTime">Event Time *</label>
+                        <input type="time" id="eventTime" name="eventTime" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="eventLocation">Location *</label>
+                        <input type="text" id="eventLocation" name="eventLocation" placeholder="e.g., Main Conference Room" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="eventCategory">Category *</label>
+                        <select id="eventCategory" name="eventCategory" required>
+                            <option value="">Select category...</option>
+                            <option value="meeting">Meeting</option>
+                            <option value="workshop">Workshop</option>
+                            <option value="conference">Conference</option>
+                            <option value="social">Social Event</option>
+                            <option value="training">Training</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="eventDescription">Event Description *</label>
+                        <textarea id="eventDescription" name="eventDescription" placeholder="Provide details about your event..." required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="organizerEmail">Your Email *</label>
+                        <input type="email" id="organizerEmail" name="organizerEmail" placeholder="organizer@example.com" required>
+                    </div>
+                    
+                    <button type="submit" class="btn" id="submitBtn">
+                        <span id="submitText">Submit Event</span>
+                        <div class="spinner" id="submitSpinner"></div>
+                    </button>
+                    
+                    <div class="success-message" id="submitSuccess">
+                        ✅ Event submitted successfully! Subscribers will be notified.
+                    </div>
+                    <div class="error-message" id="submitError">
+                        ❌ Failed to submit event. Please try again.
+                    </div>
+                </form>
+            </div>
+
+            <!-- Subscription Form -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon subscribe-icon">🔔</div>
+                    <h2>Subscribe to Updates</h2>
+                </div>
+                <form id="subscribeForm">
+                    <div class="form-group">
+                        <label for="subscriberName">Your Name *</label>
+                        <input type="text" id="subscriberName" name="subscriberName" placeholder="John Doe" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="subscriberEmail">Your Email *</label>
+                        <input type="email" id="subscriberEmail" name="subscriberEmail" placeholder="john@example.com" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="interests">Interested Categories</label>
+                        <select id="interests" name="interests" multiple style="height: 120px;">
+                            <option value="meeting">Meetings</option>
+                            <option value="workshop">Workshops</option>
+                            <option value="conference">Conferences</option>
+                            <option value="social">Social Events</option>
+                            <option value="training">Training Sessions</option>
+                            <option value="other">Other Events</option>
+                        </select>
+                        <small style="color: #666; font-size: 0.9rem;">Hold Ctrl/Cmd to select multiple categories</small>
+                    </div>
+                    
+                    <button type="submit" class="btn" id="subscribeBtn">
+                        <span id="subscribeText">Subscribe to Updates</span>
+                        <div class="spinner" id="subscribeSpinner"></div>
+                    </button>
+                    
+                    <div class="success-message" id="subscribeSuccess">
+                        ✅ Successfully subscribed! You'll receive event notifications.
+                    </div>
+                    <div class="error-message" id="subscribeError">
+                        ❌ Failed to subscribe. Please try again.
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>&copy; 2024 EventHub. Built with AWS serverless architecture.</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
