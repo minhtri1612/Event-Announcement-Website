@@ -1,3 +1,6 @@
+// KHAI BÁO URL CỦA API Ở ĐẦU TỆP ĐỂ DỄ QUẢN LÝ
+const API_URL = 'https://tsknykr0gi.execute-api.ap-southeast-2.amazonaws.com/dev';
+
 // Form handling functions
 function showMessage(elementId, show = true) {
     const element = document.getElementById(elementId);
@@ -46,24 +49,21 @@ document.getElementById('eventForm').addEventListener('submit', async function(e
     };
     
     try {
-        // TODO: Replace with your actual API Gateway endpoint
-        // const response = await fetch('YOUR_API_GATEWAY_ENDPOINT/submit-event', {
-        //     method: 'POST',
-        //     headers: {
-        //         'Content-Type': 'application/json',
-        //     },
-        //     body: JSON.stringify(eventData)
-        // });
-        
-        // Simulate API call for demo
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        const response = { ok: true }; // Mock successful response
+        // ĐÃ KÍCH HOẠT LỆNH GỌI API THẬT
+        const response = await fetch(`${API_URL}/submit-event`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(eventData)
+        });
         
         if (response.ok) {
             showMessage('submitSuccess', true);
             this.reset();
         } else {
-            throw new Error('Submission failed');
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Submission failed');
         }
     } catch (error) {
         console.error('Error submitting event:', error);
@@ -97,24 +97,21 @@ document.getElementById('subscribeForm').addEventListener('submit', async functi
     };
     
     try {
-        // TODO: Replace with your actual API Gateway endpoint
-        // const response = await fetch('YOUR_API_GATEWAY_ENDPOINT/subscribe', {
-        //     method: 'POST',
-        //     headers: {
-        //         'Content-Type': 'application/json',
-        //     },
-        //     body: JSON.stringify(subscriptionData)
-        // });
-        
-        // Simulate API call for demo
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        const response = { ok: true }; // Mock successful response
+        // ĐÃ KÍCH HOẠT LỆNH GỌI API THẬT
+        const response = await fetch(`${API_URL}/subscribe`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(subscriptionData)
+        });
         
         if (response.ok) {
             showMessage('subscribeSuccess', true);
             this.reset();
         } else {
-            throw new Error('Subscription failed');
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Subscription failed');
         }
     } catch (error) {
         console.error('Error subscribing:', error);

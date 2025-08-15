@@ -1,3 +1,5 @@
+// event-registration/function.js
+
 const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 const { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, ScanCommand } = require("@aws-sdk/lib-dynamodb");
 const { SNSClient, PublishCommand } = require("@aws-sdk/client-sns");
@@ -23,33 +25,34 @@ const corsHeaders = {
 exports.handler = async (event) => {
   console.log('Event:', JSON.stringify(event, null, 2));
 
-  const { httpMethod, pathParameters, body } = event;
+  // SỬA LỖI: Lấy ra httpMethod và resource từ event
+  const { httpMethod, resource, pathParameters, body } = event;
   
   try {
-    switch (httpMethod) {
-      case 'POST':
-        if (event.routeKey === 'POST /submit-event') {
-          return await handleSubmitEvent(JSON.parse(body || '{}'));
-        }
-        break;
-        
-      case 'GET':
-        if (event.routeKey === 'GET /events') {
-          return await handleGetEvents();
-        } else if (event.routeKey.startsWith('GET /events/')) {
-          const eventId = pathParameters?.eventId;
-          return await handleGetEvent(eventId);
-        }
-        break;
-        
-      case 'OPTIONS':
-        return {
-          statusCode: 200,
-          headers: corsHeaders,
-          body: ''
-        };
+    // SỬA LỖI: Thay thế switch(httpMethod) bằng các câu lệnh if tường minh hơn
+    if (httpMethod === 'POST' && resource === '/submit-event') {
+      return await handleSubmitEvent(JSON.parse(body || '{}'));
+    }
+      
+    if (httpMethod === 'GET' && resource === '/events') {
+      return await handleGetEvents();
     }
     
+    // Terraform route là /events/{eventId} nên resource sẽ khớp với pattern này
+    if (httpMethod === 'GET' && resource === '/events/{eventId}') {
+      const eventId = pathParameters?.eventId;
+      return await handleGetEvent(eventId);
+    }
+      
+    if (httpMethod === 'OPTIONS') {
+      return {
+        statusCode: 204, // Sử dụng 204 cho OPTIONS là chuẩn hơn
+        headers: corsHeaders,
+        body: ''
+      };
+    }
+    
+    // Nếu không có route nào khớp, trả về 404
     return {
       statusCode: 404,
       headers: corsHeaders,
@@ -80,7 +83,6 @@ async function handleSubmitEvent(eventData) {
     organizerEmail 
   } = eventData;
   
-  // Validate required fields
   if (!title || !date || !time || !location || !category || !description || !organizerEmail) {
     return {
       statusCode: 400,
@@ -105,13 +107,11 @@ async function handleSubmitEvent(eventData) {
     status: 'active'
   };
   
-  // Store event in DynamoDB
   await ddbDocClient.send(new PutCommand({
     TableName: EVENTS_TABLE,
     Item: newEvent
   }));
   
-  // Store event as JSON file in S3
   try {
     await s3Client.send(new PutObjectCommand({
       Bucket: S3_BUCKET,
@@ -123,7 +123,6 @@ async function handleSubmitEvent(eventData) {
     console.error('Error saving to S3:', s3Error);
   }
   
-  // Get interested subscribers and notify via SNS
   try {
     await notifySubscribers(newEvent);
   } catch (notificationError) {
@@ -153,7 +152,6 @@ async function handleGetEvents() {
     }
   }));
   
-  // Sort by date and time
   const events = (result.Items || []).sort((a, b) => {
     const dateTimeA = new Date(`${a.date}T${a.time}`);
     const dateTimeB = new Date(`${b.date}T${b.time}`);
@@ -200,14 +198,34 @@ async function handleGetEvent(eventId) {
 }
 
 async function notifySubscribers(eventData) {
-  // Get all subscribers
   const subscriptions = await ddbDocClient.send(new ScanCommand({
     TableName: SUBSCRIPTIONS_TABLE
   }));
-  
+
   if (!subscriptions.Items || subscriptions.Items.length === 0) {
     console.log('No subscribers found');
     return;
   }
+
+  const message = `Sự kiện mới: ${eventData.title}
+  - Thể loại: ${eventData.category}
+  - Thời gian: ${eventData.date} lúc ${eventData.time}
+  - Địa điểm: ${eventData.location}
+  - Mô tả: ${eventData.description}`;
+
+  const subject = `[Thông Báo Sự Kiện Mới] ${eventData.title}`;
+
+  const promises = subscriptions.Items.map(sub => {
+    if (sub.snsSubscriptionArn && !sub.snsSubscriptionArn.includes('pending confirmation')) {
+      return snsClient.send(new PublishCommand({
+        TopicArn: SNS_TOPIC_ARN,
+        Message: message,
+        Subject: subject,
+      }));
+    }
+    return Promise.resolve();
+  });
+
+  await Promise.all(promises);
+  console.log(`Notifications sent for event ${eventData.eventId}`);
 }
-  

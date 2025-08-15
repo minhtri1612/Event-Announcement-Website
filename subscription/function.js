@@ -1,3 +1,5 @@
+// subscription/function.js
+
 const { DynamoDBClient } = require("@aws-sdk/client-dynamodb");
 const { DynamoDBDocumentClient, PutCommand, GetCommand, DeleteCommand, ScanCommand } = require("@aws-sdk/lib-dynamodb");
 const { SNSClient, SubscribeCommand, UnsubscribeCommand } = require("@aws-sdk/client-sns");
@@ -18,37 +20,34 @@ const corsHeaders = {
 exports.handler = async (event) => {
   console.log('Event:', JSON.stringify(event, null, 2));
 
-  const { httpMethod, pathParameters, body } = event;
+  // SỬA LỖI: Lấy ra httpMethod và resource từ event
+  const { httpMethod, resource, pathParameters, body } = event;
   
   try {
-    switch (httpMethod) {
-      case 'POST':
-        if (event.routeKey === 'POST /subscribe') {
-          return await handleSubscribe(JSON.parse(body || '{}'));
-        }
-        break;
-        
-      case 'GET':
-        if (event.routeKey === 'GET /subscriptions') {
-          return await handleGetSubscriptions();
-        }
-        break;
-        
-      case 'DELETE':
-        if (event.routeKey.startsWith('DELETE /subscribe/')) {
-          const email = pathParameters?.email;
-          return await handleUnsubscribe(email);
-        }
-        break;
-        
-      case 'OPTIONS':
+    // SỬA LỖI: Thay thế switch(httpMethod) bằng các câu lệnh if tường minh hơn
+    if (httpMethod === 'POST' && resource === '/subscribe') {
+        return await handleSubscribe(JSON.parse(body || '{}'));
+    }
+    
+    if (httpMethod === 'GET' && resource === '/subscriptions') {
+        return await handleGetSubscriptions();
+    }
+    
+    // Terraform route là /subscribe/{email}
+    if (httpMethod === 'DELETE' && resource === '/subscribe/{email}') {
+        const email = pathParameters?.email;
+        return await handleUnsubscribe(email);
+    }
+
+    if (httpMethod === 'OPTIONS') {
         return {
-          statusCode: 200,
+          statusCode: 204, // Sử dụng 204 cho OPTIONS là chuẩn hơn
           headers: corsHeaders,
           body: ''
         };
     }
     
+    // Nếu không có route nào khớp, trả về 404
     return {
       statusCode: 404,
       headers: corsHeaders,
@@ -79,7 +78,6 @@ async function handleSubscribe(subscriptionData) {
     };
   }
   
-  // Check if already subscribed
   try {
     const existingSubscription = await ddbDocClient.send(new GetCommand({
       TableName: SUBSCRIPTIONS_TABLE,
@@ -87,7 +85,6 @@ async function handleSubscribe(subscriptionData) {
     }));
     
     if (existingSubscription.Item) {
-      // Update existing subscription
       await ddbDocClient.send(new PutCommand({
         TableName: SUBSCRIPTIONS_TABLE,
         Item: {
@@ -113,7 +110,6 @@ async function handleSubscribe(subscriptionData) {
     console.log('No existing subscription found, creating new one');
   }
   
-  // Subscribe to SNS
   let snsSubscriptionArn = null;
   try {
     const snsResponse = await snsClient.send(new SubscribeCommand({
@@ -124,10 +120,8 @@ async function handleSubscribe(subscriptionData) {
     snsSubscriptionArn = snsResponse.SubscriptionArn;
   } catch (error) {
     console.error('Error subscribing to SNS:', error);
-    // Continue without SNS subscription for now
   }
   
-  // Store subscription in DynamoDB
   await ddbDocClient.send(new PutCommand({
     TableName: SUBSCRIPTIONS_TABLE,
     Item: {
@@ -174,7 +168,6 @@ async function handleUnsubscribe(email) {
     };
   }
   
-  // Get subscription to get SNS subscription ARN
   try {
     const subscription = await ddbDocClient.send(new GetCommand({
       TableName: SUBSCRIPTIONS_TABLE,
@@ -189,7 +182,6 @@ async function handleUnsubscribe(email) {
       };
     }
     
-    // Unsubscribe from SNS if subscription ARN exists
     if (subscription.Item.snsSubscriptionArn && 
         subscription.Item.snsSubscriptionArn !== 'pending confirmation') {
       try {
@@ -201,7 +193,6 @@ async function handleUnsubscribe(email) {
       }
     }
     
-    // Remove from DynamoDB
     await ddbDocClient.send(new DeleteCommand({
       TableName: SUBSCRIPTIONS_TABLE,
       Key: { email: decodeURIComponent(email) }
